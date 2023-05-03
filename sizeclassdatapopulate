@@ -1,0 +1,173 @@
+# libraries used
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(ggplot2)
+library(magrittr)
+library(gitignore)
+library(readr)
+library(hrbrthemes)
+library(moments)
+
+
+
+# Start data prepping
+# Load settlement data
+Sfms <- list.files("C:/Users/trish/OneDrive/Desktop/coral size class/SfMs", full.names = TRUE) %>% lapply(read.csv) %>% bind_rows()
+winterTiles <- read.csv("C:/Users/trish/OneDrive/Desktop/coral size class/winterTiles.csv")
+summerTiles <- read.csv("C:/Users/trish/OneDrive/Desktop/coral size class/summerTiles.csv")
+sizeClassData <- read.csv("C:/Users/trish/OneDrive/Desktop/coral size class/sizeClassData.csv")
+
+# Looking through Sfms data
+Sfms$genera <- ifelse(Sfms$class == "Porites lobata (PLOB)" | 
+                        Sfms$class == "Porites lutea (PLUT)" | 
+                        Sfms$class == "Porites spp. (POSP)" | 
+                        Sfms$class == "Porites compressa (PCOM)" | 
+                        Sfms$class == "Porites brighami (PBRI)", "Porites",
+                      ifelse(Sfms$class == "Montipora capitata (MCAP)" |
+                               Sfms$class == "Montipora spp. (MOSP)" |
+                               Sfms$class == "Montipora patula (MPAT)", "Montipora",
+                             ifelse(Sfms$class == "Pocillopora meandrina (PMEA)" |
+                                      Sfms$class == "Pocillopora damicornis (PDAM)" |
+                                      Sfms$class == "Pocillopora grandis (PGRA)", "Pocillopora", "other")))
+
+Sfms$genera <- as.factor(Sfms$genera)
+
+# Looking through winter tile data
+winterTiles$genera <- ifelse(winterTiles$Genus == "Pocillopora", "Pocillopora",
+                             ifelse(winterTiles$Genus == "Porites", "Porites",
+                                     ifelse(winterTiles$Genus == "Montipora", "Montipora", "other")))
+# Looking through summer tile data
+summerTiles$genera <- ifelse(summerTiles$Genus == "Pocillopora", "Pocillopora",
+                             ifelse(summerTiles$Genus == "Porites", "Porites",
+                                     ifelse(summerTiles$Genus == "Montipora", "Montipora", "other")))
+# End data prepping
+
+
+
+# Populate tile recruitment columns
+# Function to populate recruits
+populateRecruits <- function(site, r) { # Site number and the row where the site starts as arguments
+  # Counting the number of recruits of each type and genus to populate all recruitment data for a given site
+  sizeClassData[r, "Recruit_single_sum"] <- nrow(summerTiles %>% filter(Site == site, genera == "Pocillopora", Polyp == "single"))
+  sizeClassData[r, "Recruit_multi_sum"] <- nrow(summerTiles %>% filter(Site == site, genera == "Pocillopora", Polyp == "multipolyp"))
+  sizeClassData[r, "Recruit_single_win"] <- nrow(winterTiles %>% filter(Site == site, genera == "Pocillopora", Polyp == "single"))
+  sizeClassData[r, "Recruit_multi_win"] <- nrow(winterTiles %>% filter(Site == site, genera == "Pocillopora", Polyp == "multipolyp"))
+  
+  sizeClassData[r+1, "Recruit_single_sum"] <- nrow(summerTiles %>% filter(Site == site, genera == "Porites", Polyp == "single"))
+  sizeClassData[r+1, "Recruit_multi_sum"] <- nrow(summerTiles %>% filter(Site == site, genera == "Porites", Polyp == "multipolyp"))
+  sizeClassData[r+1, "Recruit_single_win"] <- nrow(winterTiles %>% filter(Site == site, genera == "Porites", Polyp == "single"))
+  sizeClassData[r+1, "Recruit_multi_win"] <- nrow(winterTiles %>% filter(Site == site, genera == "Porites", Polyp == "multipolyp"))
+  
+  sizeClassData[r+2, "Recruit_single_sum"] <- nrow(summerTiles %>% filter(Site == site, genera == "Montipora", Polyp == "single"))
+  sizeClassData[r+2, "Recruit_multi_sum"] <- nrow(summerTiles %>% filter(Site == site, genera == "Montipora", Polyp == "multipolyp"))
+  sizeClassData[r+2, "Recruit_single_win"] <- nrow(winterTiles %>% filter(Site == site, genera == "Montipora", Polyp == "single"))
+  sizeClassData[r+2, "Recruit_multi_win"] <- nrow(winterTiles %>% filter(Site == site, genera == "Montipora", Polyp == "multipolyp"))
+  
+  sizeClassData[r+3, "Recruit_single_sum"] <- nrow(summerTiles %>% filter(Site == site, genera == "other", Polyp == "single"))
+  sizeClassData[r+3, "Recruit_multi_sum"] <- nrow(summerTiles %>% filter(Site == site, genera == "other", Polyp == "multipolyp"))
+  sizeClassData[r+3, "Recruit_single_win"] <- nrow(winterTiles %>% filter(Site == site, genera == "other", Polyp == "single"))
+  sizeClassData[r+3, "Recruit_multi_win"] <- nrow(winterTiles %>% filter(Site == site, genera == "other", Polyp == "multipolyp"))
+  return(sizeClassData)
+}
+# Calling function for all sites
+sizeClassData <- populateRecruits("38", 1)
+sizeClassData <- populateRecruits("43", 5)
+sizeClassData <- populateRecruits("45", 9)
+sizeClassData <- populateRecruits("55", 13)
+sizeClassData <- populateRecruits("60", 17)
+sizeClassData <- populateRecruits("63", 21)
+sizeClassData <- populateRecruits("67", 25)
+sizeClassData <- populateRecruits("68", 29)
+sizeClassData <- populateRecruits("141", 33)
+sizeClassData <- populateRecruits("143", 37)
+sizeClassData <- populateRecruits("146", 41)
+sizeClassData <- populateRecruits("147", 45)
+sizeClassData <- populateRecruits("148", 49)
+sizeClassData <- populateRecruits("149", 53)
+sizeClassData <- populateRecruits("150", 57)
+sizeClassData <- populateRecruits("151", 61)
+sizeClassData <- populateRecruits("152", 65)
+sizeClassData <- populateRecruits("156", 69)
+sizeClassData <- populateRecruits("159", 73)
+sizeClassData <- populateRecruits("162", 77)
+sizeClassData <- populateRecruits("164", 81)
+sizeClassData <- populateRecruits("166", 85)
+sizeClassData <- populateRecruits("167", 89)
+sizeClassData <- populateRecruits("170", 93)
+sizeClassData <- populateRecruits("171", 97)
+sizeClassData <- populateRecruits("172", 101)
+sizeClassData <- populateRecruits("175", 105)
+sizeClassData <- populateRecruits("176", 109)
+sizeClassData <- populateRecruits("177", 113)
+sizeClassData <- populateRecruits("178", 117)
+sizeClassData <- populateRecruits("R1", 121)
+sizeClassData <- populateRecruits("R2", 125)
+# Recruitment data is now populated
+
+
+# Fill in size class data from Sfms
+# Create Sfms size class column to simplify diameter values
+Sfms$sizeClass <- ifelse(Sfms$MBG_Diamet <= 0.02, 1,
+                         ifelse(Sfms$MBG_Diamet > 0.02 & Sfms$MBG_Diamet <= 0.05, 2,
+                                ifelse(Sfms$MBG_Diamet > 0.05 & Sfms$MBG_Diamet <= 0.1, 3,
+                                       ifelse(Sfms$MBG_Diamet > 0.1 & Sfms$MBG_Diamet <= 0.2, 4,
+                                              ifelse(Sfms$MBG_Diamet > 0.2 & Sfms$MBG_Diamet <= 0.4, 5,
+                                                     ifelse(Sfms$MBG_Diamet > 0.4 & Sfms$MBG_Diamet <= 0.8, 6,
+                                                            ifelse(Sfms$MBG_Diamet > 0.8 & Sfms$MBG_Diamet <= 1.6, 7, 8)))))))
+Sfms$Site <- as.character(Sfms$Site) 
+
+# Function to populate all size class columns given which site and genus to look at
+fillSizeRow <- function(site, genus, n, df) {
+  df[n, "Juve_less2cm"] <- nrow(Sfms %>% filter(Site == site, genera == genus, sizeClass == 1))
+  df[n, "Juve_2_5cm"] <- nrow(Sfms %>% filter(Site == site, genera == genus, sizeClass == 2))
+  df[n, "Adult_5_10cm"] <- nrow(Sfms %>% filter(Site == site, genera == genus, sizeClass == 3))
+  df[n, "Adult_10_20cm"] <- nrow(Sfms %>% filter(Site == site, genera == genus, sizeClass == 4))
+  df[n, "Adult_20_40cm"] <- nrow(Sfms %>% filter(Site == site, genera == genus, sizeClass == 5))
+  df[n, "Adult_40_80cm"] <- nrow(Sfms %>% filter(Site == site, genera == genus, sizeClass == 6))
+  df[n, "Adult_80_160cm"] <- nrow(Sfms %>% filter(Site == site, genera == genus, sizeClass == 7))
+  df[n, "Adult_over160cm"] <- nrow(Sfms %>% filter(Site == site, genera == genus, sizeClass == 8))
+  return(df)
+}
+
+# Function to populate all size class data for a given site
+populateSfMs <- function(site, r) {
+  sizeClassData <- fillSizeRow(site, "Pocillopora", r, sizeClassData)
+  sizeClassData <- fillSizeRow(site, "Porites", r+1, sizeClassData)
+  sizeClassData <- fillSizeRow(site, "Montipora", r+2, sizeClassData)
+  sizeClassData <- fillSizeRow(site, "other", r+3, sizeClassData)
+  return(sizeClassData)
+}
+
+# Calling function to populate size class data for all SfMs sites
+sizeClassData <- populateSfMs("38", 1)
+sizeClassData <- populateSfMs("43", 5)
+sizeClassData <- populateSfMs("45", 9)
+sizeClassData <- populateSfMs("55", 13)
+sizeClassData <- populateSfMs("60", 17)
+sizeClassData <- populateSfMs("63", 21)
+sizeClassData <- populateSfMs("67", 25)
+sizeClassData <- populateSfMs("68", 29)
+sizeClassData <- populateSfMs("141", 33)
+sizeClassData <- populateSfMs("143", 37)
+sizeClassData <- populateSfMs("146", 41)
+sizeClassData <- populateSfMs("147", 45)
+sizeClassData <- populateSfMs("148", 49)
+sizeClassData <- populateSfMs("149", 53)
+sizeClassData <- populateSfMs("151", 61)
+sizeClassData <- populateSfMs("152", 65)
+sizeClassData <- populateSfMs("159", 73)
+sizeClassData <- populateSfMs("164", 81)
+sizeClassData <- populateSfMs("167", 89)
+sizeClassData <- populateSfMs("170", 93)
+sizeClassData <- populateSfMs("171", 97)
+sizeClassData <- populateSfMs("172", 101)
+sizeClassData <- populateSfMs("175", 105)
+sizeClassData <- populateSfMs("176", 109)
+sizeClassData <- populateSfMs("177", 113)
+sizeClassData <- populateSfMs("178", 117)
+# Size class data is now populated
+
+# Exporting filled dataframe as a .csv
+write.csv(sizeClassData, "C:/Users/trish/OneDrive/Desktop/coral size class/sizeClassDataFilled.csv", row.names=FALSE)
+
